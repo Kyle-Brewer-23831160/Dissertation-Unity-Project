@@ -32,7 +32,7 @@ public class FalseDataGen : MonoBehaviour
     {
         FileCount = Directory.GetFiles(Application.dataPath + "/Resources/FalseData").Length;
         if (FileCount > 0) { FileCount = FileCount / 2; } //account for META files
-        Writer = new StreamWriter(Application.dataPath + "/Resources/FalseData/MatchData" + FileCount + ".csv", true);
+        Writer = new StreamWriter(Application.dataPath + "/Resources/FalseData/MatchData" + (FileCount + 1) + ".csv", true);
 
         string headers = "";
 
@@ -110,8 +110,8 @@ public class FalseDataGen : MonoBehaviour
 
         for (int i = 0; i < 999; i++) //generate 1000 values
         {
-            StartCoroutine(PrePrep.GetPoolFromDatabase("TheFool", "http://localhost/Unity%20Scripts/GetPlayerPool.php")); //pull players from database
-            yield return PrePrep.GetPoolFromDatabase("TheFool", "http://localhost/Unity%20Scripts/GetPlayerPool.php");
+            StartCoroutine(PrePrep.GetPoolFromDatabase("a", "http://localhost/Unity%20Scripts/GetPlayerPool.php")); //pull players from database
+            yield return PrePrep.GetPoolFromDatabase("a", "http://localhost/Unity%20Scripts/GetPlayerPool.php");
             PrePrep.GetAndRandomise(); //randomise teams
             T1Power = PrePrep.CalculateTeamStrength(PrePrep.Team1); //calculate powers
             T2Power = PrePrep.CalculateTeamStrength(PrePrep.Team2);

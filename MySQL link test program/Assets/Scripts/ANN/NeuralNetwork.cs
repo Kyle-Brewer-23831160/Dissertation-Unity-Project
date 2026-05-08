@@ -25,7 +25,7 @@ public class NeuralNetwork
     }
 
     // Pass inputs forward through all layers
-    public List<float> FeedForward(List<float> inputs) //a list in this cast would be 5 inputs, 1 from each ray
+    public List<float> FeedForward(List<float> inputs) //a list in this case would be 5 inputs, 1 from each ray
     {
         List<float> currentOutputs = inputs;
 
@@ -37,7 +37,7 @@ public class NeuralNetwork
         return currentOutputs;
     }
 
-    public void BackPropagate(List<float> inputs, List<float> targets)
+    public void BackPropagate(List<float> inputs, float target)
     {
         // First do a full forward pass so every neuron has its latest output
         List<float> outputs = FeedForward(inputs);
@@ -52,7 +52,7 @@ public class NeuralNetwork
             Neuron neuron = outputLayer.neurons[i];
 
             // Error = target - actual output
-            float error = targets[i] - neuron.output;
+            float error = target - neuron.output; //this could be an issue;
 
             // Tanh derivative = 1 - out * out
             neuron.errorGradient = error * (1.0f - (neuron.output * neuron.output));

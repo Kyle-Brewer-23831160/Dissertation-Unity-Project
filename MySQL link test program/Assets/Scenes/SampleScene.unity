@@ -1077,6 +1077,10 @@ MonoBehaviour:
   PlayerList: []
   Team1: []
   Team2: []
+  epochs: 100
+  learningRate: 0.1
+  NetworkStruct: 24000000020000000200000001000000
+  Data: []
 --- !u!1 &727766723
 GameObject:
   m_ObjectHideFlags: 0

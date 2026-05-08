@@ -1,5 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Data;
+using System.IO;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 public class NetworkPrePrep : MonoBehaviour
@@ -7,6 +10,27 @@ public class NetworkPrePrep : MonoBehaviour
     public List<Player> PlayerList = new List<Player>();
     public List<Player> Team1 = new List<Player>();
     public List<Player> Team2 = new List<Player>();
+    private StreamReader Reader;
+
+    //network stuff
+    public NeuralNetwork nn;
+
+    public int epochs;
+    public float learningRate = 0.1f;
+
+    //first element = input layer, last element = output layer, anything between =  hidden layers
+    [SerializeField] private int[] NetworkStruct; //The number in those elements = number of neurons in that layer
+
+    private bool Line0Skipped;
+
+    public List<Brain.TrainingData> Data;
+
+    private string FileData;
+
+    private void Start()
+    {
+       ReadCSV();
+    }
 
     //get the player pool
     public IEnumerator GetPoolFromDatabase(string QueuedPlayerName, string uri)
@@ -26,6 +50,7 @@ public class NetworkPrePrep : MonoBehaviour
         {
             if (users[f] == QueuedPlayerName) //find target player and elo
             {
+                //print("what");
                 Player player = new Player();
                 player.UserName = users[f];
                 player.level = int.Parse(users[f + 1]);
@@ -51,8 +76,8 @@ public class NetworkPrePrep : MonoBehaviour
 
                     if (int.TryParse(users[k], out int playerElo))
                     {
-                        bool ValidElo = playerElo >= PlayerList[0].PlayerElo - 250 &&
-                                        playerElo <= PlayerList[0].PlayerElo + 250; //if current checking player isnt too low or too high compared to first player
+                        bool ValidElo = playerElo >= PlayerList[0].PlayerElo - 400 &&
+                                        playerElo <= PlayerList[0].PlayerElo + 400; //if current checking player isnt too low or too high compared to first player
 
                         if (ValidElo) //if current checking player isnt too low or too high compared to first player
                         {
@@ -127,13 +152,58 @@ public class NetworkPrePrep : MonoBehaviour
         return player2.PlayerElo.CompareTo(player1.PlayerElo);
     }
 
+    private void ReadCSV()
+    {
+        int FileCount = Directory.GetFiles(Application.dataPath + "/Resources/FalseData").Length;
+        if (FileCount > 0) { FileCount = FileCount / 2; } //account for META files
+        Reader = new StreamReader(Application.dataPath + "/Resources/FalseData/MatchData" + FileCount + ".csv", true);
+        FileData = Reader.ReadToEnd();
+        Reader.Close();
+
+        string[] rows = FileData.Split("\n"[0]); //each row will have data from 2 teams as well as fairness result
+
+        for (int i = 1; i < rows.Length - 1; i++) //for each row
+        {
+            string[] rowParts = rows[i].Split(","[0]);  //each part will be a piece of data from each player on either of 2 teams
+
+            List<float> RowData = new List<float>(); //issue is here
+
+            for (int j = 0; j < rowParts.Length; j++)
+            {
+                bool FormatGuard = float.TryParse(rowParts[j], out float result);
+                if (FormatGuard)
+                {
+                    RowData.Add(float.Parse(rowParts[j]));
+                }
+                else continue;
+            }
+
+            print (RowData.Count);
+
+            Data.Add(new Brain.TrainingData(new List<float> { RowData[0], RowData[1], RowData[2], //p1 elo, level, kd
+                                                              RowData[3], RowData[4], RowData[5], //p2 elo, level, kd
+                                                              RowData[6], RowData[7], RowData[8], //p3 elo, level, kd
+                                                              RowData[9], RowData[10], RowData[11], //p4 elo, level, kd
+                                                              RowData[12], RowData[13], RowData[14], //p5 elo, level, kd
+                                                              RowData[15], RowData[16], RowData[17], //p6 elo, level, kd
+                                                              RowData[18], RowData[19], RowData[20], //p7 elo, level, kd
+                                                              RowData[21], RowData[22], RowData[23], //p8 elo, level, kd
+                                                              RowData[24], RowData[25], RowData[26], //p9 elo, level, kd
+                                                              RowData[27], RowData[28], RowData[29], //p10 elo, level, kd
+                                                              RowData[30], RowData[31], RowData[32], //p11 elo, level, kd
+                                                              RowData[33], RowData[34], RowData[35]}, //p12 elo, level, kd
+                                                              RowData[36]));
+        }
+
+        TrainNetwork(); //train network once data has been read
+    }
+
     //calculate player power and team power
     private float CalculatePlayerStrength(Player player)
     {
         float PlayerStrength = (player.PlayerElo * 0.4f) + (player.KDR * 400f) + (player.level * 1.5f);
         return PlayerStrength;
     }
-
 
     public float CalculateTeamStrength(List<Player> Team)
     {
@@ -145,5 +215,34 @@ public class NetworkPrePrep : MonoBehaviour
         }
 
         return TeamPower;
+    }
+
+    private void TrainNetwork()
+    {
+        if (nn == null) { nn = new NeuralNetwork(NetworkStruct, learningRate); }
+
+        for (int epoch = 0; epoch < epochs; epoch++)
+        {
+            double totalError = 0.0;
+
+            for (int i = 0; i < Data.Count; i++) 
+            {
+                // Train on one sample
+                nn.BackPropagate(Data[i].inputs, Data[i].target);
+
+                // Get the network's current output for that same sample
+                List<float> result = nn.FeedForward(Data[i].inputs); //the outputs after all inputs have been through the newtwork
+
+                // Add squared error for this sample
+                for (int j = 0; j < result.Count; j++)
+                {
+                    print(result[j] + " " + i);
+                    double error = Data[i].target - result[j];
+                    totalError += error * error;
+                }
+            }
+
+            Debug.Log("Epoch " + epoch + " | Total Error = " + totalError.ToString("F6"));
+        }
     }
 }

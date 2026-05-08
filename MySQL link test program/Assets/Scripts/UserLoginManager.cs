@@ -2,12 +2,22 @@ using UnityEngine;
 using UnityEngine.Networking;
 using System.Collections;
 using TMPro;
+using Unity.VisualScripting;
 
 public class UserLoginManager : MonoBehaviour
 {
     [SerializeField] private TMP_InputField UsernameText;
     [SerializeField] private TMP_InputField PasswordText;
     [SerializeField] private TMP_InputField EmailText;
+
+    private void Update()
+    {
+        if(Input.GetKeyDown(KeyCode.KeypadEnter))
+        {
+            RegisterNewUser();
+            StartCoroutine(Convienience());
+        }
+    }
 
     public void RegisterNewUser()
     {
@@ -69,5 +79,11 @@ public class UserLoginManager : MonoBehaviour
         UsernameText.text = string.Empty;
         EmailText.text = string.Empty;
         PasswordText.text = string.Empty;
+    }
+
+    private IEnumerator Convienience()
+    {
+        yield return SendNewUserData();
+        UsernameText.Select();
     }
 }
