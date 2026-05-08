@@ -235,8 +235,6 @@ public class NetworkPrePrep : MonoBehaviour
                 double error = Data[i].target - (double)result[0];
                 totalError += error * error;
 
-                print(result);
-
                 // Train on one sample
                 nn.BackPropagate(Data[i].inputs, Data[i].target);
             }
