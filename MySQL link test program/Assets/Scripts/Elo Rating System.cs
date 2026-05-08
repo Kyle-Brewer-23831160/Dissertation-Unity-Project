@@ -34,7 +34,7 @@ public class EloRatingSystem : MonoBehaviour
         }
         if (Input.GetKeyDown(KeyCode.S))
         {
-           StartCoroutine(GetPoolFromDatabase("HeyYa", "http://localhost/Unity%20Scripts/GetPlayerPool.php/"));
+           StartCoroutine(GetPoolFromDatabase("C-MOON", "http://localhost/Unity%20Scripts/GetPlayerPool.php/"));
         }
     }
 
@@ -109,7 +109,6 @@ public class EloRatingSystem : MonoBehaviour
         yield return download;
 
         string rawResponse = download.text;
-
         string[] users = rawResponse.Split("/");
 
         for (int f = 0; f < users.Length; f++)
@@ -118,7 +117,11 @@ public class EloRatingSystem : MonoBehaviour
             {
                 Player player = new Player();
                 player.UserName = users[f];
-                string Elo = users[f + 1];
+                player.level = int.Parse(users[f + 1]);
+                player.Kills = int.Parse(users[f + 2]);
+                player.Deaths = int.Parse(users[f + 3]);
+                player.KDR = (float)player.Kills / Mathf.Max(1, player.Deaths);
+                string Elo = users[f + 4];
                 int EloValue;
                 int.TryParse(Elo, out EloValue);
                 player.PlayerElo = EloValue;
@@ -131,36 +134,45 @@ public class EloRatingSystem : MonoBehaviour
         {
             for (int k = 0; k < users.Length; k++) //search through all users
             {
-                if (int.TryParse(users[k], out int playerElo)) //find target player and elo
+                if (int.TryParse(users[k], out int playerLevl)) //if sucessful, user level is located, their elo is 3 spaces past this
                 {
-                    bool ValidElo = playerElo >= PlayerList[0].PlayerElo - 300 && 
-                                    playerElo <= PlayerList[0].PlayerElo + 300; //if current checking player isnt too low or too high compared to first player
+                    k += 3; //adding 3 to index will put us at that users rank value
 
-                    if (ValidElo) //if current checking player isnt too low or too high compared to first player
+                    if (int.TryParse(users[k], out int playerElo))
                     {
-                        string Name = users[k - 1];
+                        bool ValidElo = playerElo >= PlayerList[0].PlayerElo - 250 &&
+                                        playerElo <= PlayerList[0].PlayerElo + 250; //if current checking player isnt too low or too high compared to first player
 
-                        bool playerExistsinList = false;
-
-                        for (int a = 0; a < PlayerList.Count; a++)
+                        if (ValidElo) //if current checking player isnt too low or too high compared to first player
                         {
-                            if (PlayerList[a].UserName == users[k - 1]) //check if we are adding a player that is already in the list
+                            string Name = users[k - 4];
+
+                            bool playerExistsinList = false;
+
+                            for (int a = 0; a < PlayerList.Count; a++)
                             {
-                                playerExistsinList = true;
+                                if (PlayerList[a].UserName == users[k - 4]) //check if we are adding a player that is already in the list
+                                {
+                                    playerExistsinList = true;
+                                    break;
+                                }
+                            }
+
+                            if (!playerExistsinList)
+                            {
+                                Player player = new Player();
+                                player.level = int.Parse(users[k - 3]);
+                                player.Kills = int.Parse(users[k - 2]);
+                                player.Deaths = int.Parse(users[k - 1]);
+                                player.KDR = (float)player.Kills / Mathf.Max(1, player.Deaths);
+                                player.UserName = users[k - 4];
+                                string Elo = users[k];
+                                int EloValue;
+                                int.TryParse(Elo, out EloValue);
+                                player.PlayerElo = EloValue;
+                                PlayerList.Add(player);
                                 break;
                             }
-                        }
-
-                        if (!playerExistsinList)
-                        {
-                            Player player = new Player();
-                            player.UserName = users[k - 1];
-                            string Elo = users[k];
-                            int EloValue;
-                            int.TryParse(Elo, out EloValue);
-                            player.PlayerElo = EloValue;
-                            PlayerList.Add(player);
-                            break;
                         }
                     }
                 }
