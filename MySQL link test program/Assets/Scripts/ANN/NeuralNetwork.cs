@@ -54,8 +54,8 @@ public class NeuralNetwork
             // Error = target - actual output
             float error = target - neuron.output; //this could be an issue;
 
-            // Tanh derivative = 1 - out * out
-            neuron.errorGradient = error * (1.0f - (neuron.output * neuron.output));
+            //Sigmoid derivative = 1 - out * out
+            neuron.errorGradient = error * (neuron.output * (1.0f - neuron.output));
         }
 
         // -----------------------------
@@ -78,7 +78,7 @@ public class NeuralNetwork
                     sum += nextLayer.neurons[j].weights[i] * nextLayer.neurons[j].errorGradient;
                 }
 
-                neuron.errorGradient = sum * (1.0f - (neuron.output * neuron.output));
+                neuron.errorGradient = sum * (neuron.output * (1.0f - neuron.output));
             }
         }
 

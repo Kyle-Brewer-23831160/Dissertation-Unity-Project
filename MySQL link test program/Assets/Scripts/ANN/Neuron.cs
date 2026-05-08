@@ -45,7 +45,7 @@ public class Neuron
 
         // Pass the final sum through the sigmoid activation function.
         // Save the result in output and return it.
-        output = (float)Math.Tanh(sum);
+        output = 1.0f / (1.0f + Mathf.Exp(-sum));
         return output;
     }
 

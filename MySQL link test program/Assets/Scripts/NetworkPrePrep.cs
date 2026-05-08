@@ -173,26 +173,19 @@ public class NetworkPrePrep : MonoBehaviour
                 bool FormatGuard = float.TryParse(rowParts[j], out float result);
                 if (FormatGuard)
                 {
-                    RowData.Add(float.Parse(rowParts[j]));
+                    RowData.Add(result);
                 }
                 else continue;
             }
 
-            print (RowData.Count);
 
-            Data.Add(new Brain.TrainingData(new List<float> { RowData[0], RowData[1], RowData[2], //p1 elo, level, kd
-                                                              RowData[3], RowData[4], RowData[5], //p2 elo, level, kd
-                                                              RowData[6], RowData[7], RowData[8], //p3 elo, level, kd
-                                                              RowData[9], RowData[10], RowData[11], //p4 elo, level, kd
-                                                              RowData[12], RowData[13], RowData[14], //p5 elo, level, kd
-                                                              RowData[15], RowData[16], RowData[17], //p6 elo, level, kd
-                                                              RowData[18], RowData[19], RowData[20], //p7 elo, level, kd
-                                                              RowData[21], RowData[22], RowData[23], //p8 elo, level, kd
-                                                              RowData[24], RowData[25], RowData[26], //p9 elo, level, kd
-                                                              RowData[27], RowData[28], RowData[29], //p10 elo, level, kd
-                                                              RowData[30], RowData[31], RowData[32], //p11 elo, level, kd
-                                                              RowData[33], RowData[34], RowData[35]}, //p12 elo, level, kd
-                                                              RowData[36]));
+            if (RowData.Count >= 37)
+            {
+                List<float> inputs = RowData.GetRange(0, 36);
+                float target = RowData[36];
+
+                Data.Add(new Brain.TrainingData(inputs, target));
+            }
         }
 
         TrainNetwork(); //train network once data has been read
@@ -223,23 +216,29 @@ public class NetworkPrePrep : MonoBehaviour
 
         for (int epoch = 0; epoch < epochs; epoch++)
         {
+            // --- SHUFFLE START ---
+            for (int i = 0; i < Data.Count; i++)
+            {
+                var temp = Data[i];
+                int randomIndex = Random.Range(i, Data.Count);
+                Data[i] = Data[randomIndex];
+                Data[randomIndex] = temp;
+            }
+
             double totalError = 0.0;
 
             for (int i = 0; i < Data.Count; i++) 
             {
-                // Train on one sample
-                nn.BackPropagate(Data[i].inputs, Data[i].target);
-
                 // Get the network's current output for that same sample
                 List<float> result = nn.FeedForward(Data[i].inputs); //the outputs after all inputs have been through the newtwork
+               
+                double error = Data[i].target - (double)result[0];
+                totalError += error * error;
 
-                // Add squared error for this sample
-                for (int j = 0; j < result.Count; j++)
-                {
-                    print(result[j] + " " + i);
-                    double error = Data[i].target - result[j];
-                    totalError += error * error;
-                }
+                print(result);
+
+                // Train on one sample
+                nn.BackPropagate(Data[i].inputs, Data[i].target);
             }
 
             Debug.Log("Epoch " + epoch + " | Total Error = " + totalError.ToString("F6"));
