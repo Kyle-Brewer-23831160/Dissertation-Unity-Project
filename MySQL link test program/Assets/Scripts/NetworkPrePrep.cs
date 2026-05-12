@@ -21,8 +21,6 @@ public class NetworkPrePrep : MonoBehaviour
     //first element = input layer, last element = output layer, anything between =  hidden layers
     [SerializeField] private int[] NetworkStruct; //The number in those elements = number of neurons in that layer
 
-    private bool Line0Skipped;
-
     public List<Brain.TrainingData> Data;
 
     private string FileData;
@@ -33,102 +31,49 @@ public class NetworkPrePrep : MonoBehaviour
     }
 
     //get the player pool
-    public IEnumerator GetPoolFromDatabase(string QueuedPlayerName, string uri)
+    public IEnumerator GetPoolFromDatabase(string QueuedPlayerName, List<Player> Players)
     {
         PlayerList = new List<Player>();
 
-        WWW download = new WWW(uri);
-
-        yield return download;
-
-        string rawResponse = download.text;
-        string[] users = rawResponse.Split("/");
-
-        if (QueuedPlayerName == "") //doesnt like when its blank (crashes)
+        foreach (Player p in Players)
         {
-            int rand = Random.Range(0, (users.Length / 5));
-
-            WWWForm form = new WWWForm();
-            form.AddField("index", rand);
-
-            WWW GetUser = new WWW("http://localhost/Unity%20Scripts/GrabChosenPlayer.php", form);
-
-            yield return GetUser;
-
-            string name = GetUser.text;
-
-            QueuedPlayerName = name;
-        }
-
-
-        for (int f = 0; f < users.Length; f++)
-        {
-            if (users[f] == QueuedPlayerName) //find target player and elo
+            if(p.UserName == QueuedPlayerName)
             {
-                Player player = new Player();
-                player.UserName = users[f];
-                player.level = int.Parse(users[f + 1]);
-                player.Kills = int.Parse(users[f + 2]);
-                player.Deaths = int.Parse(users[f + 3]);
-                player.KDR = (float)player.Kills / Mathf.Max(1, player.Deaths);
-                string Elo = users[f + 4];
-                int EloValue;
-                int.TryParse(Elo, out EloValue);
-                player.PlayerElo = EloValue;
-                PlayerList.Add(player);
-                break;
+                PlayerList.Add(p);
             }
         }
-        
 
         for (int i = 0; i < 30; i++) //6v6 so we need 11 more players
         {
-            for (int k = 0; k < users.Length; k++) //search through all users
+            foreach (Player p in Players) //search through all users
             {
-                if (int.TryParse(users[k], out int playerLevl)) //if sucessful, user level is located, their elo is 3 spaces past this
+
+                bool ValidElo = p.PlayerElo >= PlayerList[0].PlayerElo - 400 &&
+                                p.PlayerElo <= PlayerList[0].PlayerElo + 400; //if current checking player isnt too low or too high compared to first player
+
+                if (ValidElo) //if current checking player isnt too low or too high compared to first player
                 {
-                    k += 3; //adding 3 to index will put us at that users rank value
+                    bool playerExistsinList = false;
 
-                    if (int.TryParse(users[k], out int playerElo))
+                    for (int a = 0; a < PlayerList.Count; a++)
                     {
-                        bool ValidElo = playerElo >= PlayerList[0].PlayerElo - 400 &&
-                                        playerElo <= PlayerList[0].PlayerElo + 400; //if current checking player isnt too low or too high compared to first player
-
-                        if (ValidElo) //if current checking player isnt too low or too high compared to first player
+                        if (PlayerList[a].UserName == p.UserName) //check if we are adding a player that is already in the list
                         {
-                            string Name = users[k - 4];
-
-                            bool playerExistsinList = false;
-
-                            for (int a = 0; a < PlayerList.Count; a++)
-                            {
-                                if (PlayerList[a].UserName == users[k - 4]) //check if we are adding a player that is already in the list
-                                {
-                                    playerExistsinList = true;
-                                    break;
-                                }
-                            }
-
-                            if (!playerExistsinList)
-                            {
-                                Player player = new Player();
-                                player.level = int.Parse(users[k - 3]);
-                                player.Kills = int.Parse(users[k - 2]);
-                                player.Deaths = int.Parse(users[k - 1]);
-                                player.KDR = (float)player.Kills / Mathf.Max(1, player.Deaths);
-                                player.UserName = users[k - 4];
-                                string Elo = users[k];
-                                int EloValue;
-                                int.TryParse(Elo, out EloValue);
-                                player.PlayerElo = EloValue;
-                                PlayerList.Add(player);
-                                break;
-                            }
+                            playerExistsinList = true;
+                            break;
                         }
+                    }
+
+                    if (!playerExistsinList)
+                    {
+                        PlayerList.Add(p);
+                        break;
                     }
                 }
             }
         }
+
+        yield return null;  
     }
 
     //pick 11 other players

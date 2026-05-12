@@ -3,22 +3,23 @@ using System.Collections.Generic;
 using System.IO;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Networking;
+using static UnityEngine.UIElements.UxmlAttributeDescription;
 
 public class FalseDataGen : MonoBehaviour
 {
     public NetworkPrePrep PrePrep;
     private StreamWriter Writer;
-    private StreamReader Reader;
-    private string file;
     private float T1Power;
     private float T2Power;
     private int FileCount;
+    public List<Player> FullPlayerList = new List<Player>();
 
     private void CreateCSV()
     {
         FileCount = Directory.GetFiles(Application.dataPath + "/Resources/FalseData").Length;
         if (FileCount > 0) { FileCount = FileCount / 2; } //account for META files
-        Writer = new StreamWriter(Application.dataPath + "/Resources/FalseData/MatchData" + (FileCount + 1) + ".csv", true);
+        Writer = new StreamWriter(Application.dataPath + "/Resources/FalseData/MatchData" + (FileCount) + ".csv", true);
 
         string headers = "";
 
@@ -39,9 +40,9 @@ public class FalseDataGen : MonoBehaviour
         Writer.Close();
     }
 
-    public void SaveMatchToCSV(List<Player> teamA, List<Player> teamB, float fairness, int filenum)
+    public void SaveMatchToCSV(List<Player> teamA, List<Player> teamB, float fairness)
     {
-        Writer = new StreamWriter(Application.dataPath + "/Resources/FalseData/MatchData" + filenum + ".csv", true);
+        Writer = new StreamWriter(Application.dataPath + "/Resources/FalseData/MatchData" + FileCount + ".csv", true);
 
         string row = "";
 
@@ -94,14 +95,49 @@ public class FalseDataGen : MonoBehaviour
     {
         CreateCSV(); //create CSV file
 
+        //get all players from database
+        using (UnityWebRequest www = UnityWebRequest.Get("http://localhost/Unity%20Scripts/GetPlayerPool.php"))
+        {
+            yield return www.SendWebRequest();
+
+            if (www.result == UnityWebRequest.Result.ConnectionError || www.result == UnityWebRequest.Result.ProtocolError || www.result == UnityWebRequest.Result.DataProcessingError)
+            {
+                Debug.Log(www.error);
+            }
+            else
+            {
+                string result = www.downloadHandler.text;
+                string[] parts = result.Split("/");
+
+                for (int f = 0; f < parts.Length; f += 5)
+                {
+                    if (parts[f] != string.Empty)
+                    {
+                        Player player = new Player();
+                        player.UserName = parts[f];
+                        player.level = int.Parse(parts[f + 1]);
+                        player.Kills = int.Parse(parts[f + 2]);
+                        player.Deaths = int.Parse(parts[f + 3]);
+                        player.KDR = (float)player.Kills / Mathf.Max(1, player.Deaths);
+                        string Elo = parts[f + 4];
+                        int EloValue;
+                        int.TryParse(Elo, out EloValue);
+                        player.PlayerElo = EloValue;
+                        FullPlayerList.Add(player);
+                    }
+                }
+            }
+        }
+
+        int rand = Random.Range(0, FullPlayerList.Count);
+
         for (int i = 0; i < 3000; i++) //generate 1000 values
         {
-            StartCoroutine(PrePrep.GetPoolFromDatabase("TheFool", "http://localhost/Unity%20Scripts/GetPlayerPool.php")); //pull players from database
-            yield return PrePrep.GetPoolFromDatabase("TheFool", "http://localhost/Unity%20Scripts/GetPlayerPool.php");
+            yield return PrePrep.GetPoolFromDatabase(FullPlayerList[rand].UserName, FullPlayerList);
             PrePrep.GetAndRandomise(); //randomise teams
             T1Power = PrePrep.CalculateTeamStrength(PrePrep.Team1); //calculate powers
             T2Power = PrePrep.CalculateTeamStrength(PrePrep.Team2);
-            SaveMatchToCSV(PrePrep.Team1, PrePrep.Team2, CalculateMatchFairness(T1Power, T2Power), FileCount); //save results
+            SaveMatchToCSV(PrePrep.Team1, PrePrep.Team2, CalculateMatchFairness(T1Power, T2Power)); //save results
         }
     }
 

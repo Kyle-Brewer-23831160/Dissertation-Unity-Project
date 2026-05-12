@@ -34,15 +34,12 @@ public class RandomiseAndJudge : MonoBehaviour
     {
         for (int i = 0; i < 500; i++)
         {
-            StartCoroutine(GenerateMatch());
+            GenerateMatch();
         }
     }
 
-    private IEnumerator GenerateMatch()
+    private void GenerateMatch()
     {
-        StartCoroutine(PrePrep.GetPoolFromDatabase(PlayerName, "http://localhost/Unity%20Scripts/GetPlayerPool.php")); //grab a pool of players
-        yield return PrePrep.GetPoolFromDatabase(PlayerName, "http://localhost/Unity%20Scripts/GetPlayerPool.php");
-
         PrePrep.GetAndRandomise(); //assign players from the pools to teams
 
         playerdata.Clear(); //clear Data list
