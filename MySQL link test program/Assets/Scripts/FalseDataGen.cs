@@ -14,20 +14,6 @@ public class FalseDataGen : MonoBehaviour
     private float T2Power;
     private int FileCount;
 
-    private void Update()
-    {
-        if(Input.GetKeyDown(KeyCode.M))
-        {
-            CreateCSV();
-        }
-        if (Input.GetKeyDown(KeyCode.K))
-        {
-            T1Power = PrePrep.CalculateTeamStrength(PrePrep.Team1);
-            T2Power = PrePrep.CalculateTeamStrength(PrePrep.Team2);
-            SaveMatchToCSV(PrePrep.Team1, PrePrep.Team2, CalculateMatchFairness(T1Power, T2Power), FileCount);
-        }
-    }
-
     private void CreateCSV()
     {
         FileCount = Directory.GetFiles(Application.dataPath + "/Resources/FalseData").Length;
@@ -87,7 +73,7 @@ public class FalseDataGen : MonoBehaviour
         Writer.Close();
     }
 
-    private float CalculateMatchFairness(float Team1Power, float Team2Power) //THIS WILL BE USED AS THE DATA USED TO TRAIN THE NETWORK
+    public float CalculateMatchFairness(float Team1Power, float Team2Power) //THIS WILL BE USED AS THE DATA USED TO TRAIN THE NETWORK
     {
         float StrengthGap = Mathf.Abs(Team1Power - Team2Power);
 
@@ -108,10 +94,10 @@ public class FalseDataGen : MonoBehaviour
     {
         CreateCSV(); //create CSV file
 
-        for (int i = 0; i < 999; i++) //generate 1000 values
+        for (int i = 0; i < 3000; i++) //generate 1000 values
         {
-            StartCoroutine(PrePrep.GetPoolFromDatabase("a", "http://localhost/Unity%20Scripts/GetPlayerPool.php")); //pull players from database
-            yield return PrePrep.GetPoolFromDatabase("a", "http://localhost/Unity%20Scripts/GetPlayerPool.php");
+            StartCoroutine(PrePrep.GetPoolFromDatabase("TheFool", "http://localhost/Unity%20Scripts/GetPlayerPool.php")); //pull players from database
+            yield return PrePrep.GetPoolFromDatabase("TheFool", "http://localhost/Unity%20Scripts/GetPlayerPool.php");
             PrePrep.GetAndRandomise(); //randomise teams
             T1Power = PrePrep.CalculateTeamStrength(PrePrep.Team1); //calculate powers
             T2Power = PrePrep.CalculateTeamStrength(PrePrep.Team2);

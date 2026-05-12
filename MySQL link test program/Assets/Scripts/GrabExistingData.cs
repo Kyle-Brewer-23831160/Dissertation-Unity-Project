@@ -26,8 +26,6 @@ public class GrabExistingData : MonoBehaviour
         string rawResponse = download.text;
         string[] users = rawResponse.Split("/");
 
-        print(rawResponse);
-
         for (int i = 0; i < users.Length; i++)
         {
             Player Current = new Player();

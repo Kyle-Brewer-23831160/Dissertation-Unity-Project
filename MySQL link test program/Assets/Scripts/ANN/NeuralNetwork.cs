@@ -25,7 +25,7 @@ public class NeuralNetwork
     }
 
     // Pass inputs forward through all layers
-    public List<float> FeedForward(List<float> inputs) //a list in this case would be 5 inputs, 1 from each ray
+    public List<float> FeedForward(List<float> inputs) //a list in this case would be 37 inputs
     {
         List<float> currentOutputs = inputs;
 

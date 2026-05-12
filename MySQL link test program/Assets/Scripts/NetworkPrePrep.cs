@@ -37,20 +37,34 @@ public class NetworkPrePrep : MonoBehaviour
     {
         PlayerList = new List<Player>();
 
-        WWWForm form = new WWWForm();
-        form.AddField("username1", QueuedPlayerName);
-        WWW download = new WWW(uri, form);
+        WWW download = new WWW(uri);
 
         yield return download;
 
         string rawResponse = download.text;
         string[] users = rawResponse.Split("/");
 
+        if (QueuedPlayerName == "") //doesnt like when its blank (crashes)
+        {
+            int rand = Random.Range(0, (users.Length / 5));
+
+            WWWForm form = new WWWForm();
+            form.AddField("index", rand);
+
+            WWW GetUser = new WWW("http://localhost/Unity%20Scripts/GrabChosenPlayer.php", form);
+
+            yield return GetUser;
+
+            string name = GetUser.text;
+
+            QueuedPlayerName = name;
+        }
+
+
         for (int f = 0; f < users.Length; f++)
         {
             if (users[f] == QueuedPlayerName) //find target player and elo
             {
-                //print("what");
                 Player player = new Player();
                 player.UserName = users[f];
                 player.level = int.Parse(users[f + 1]);
@@ -65,6 +79,7 @@ public class NetworkPrePrep : MonoBehaviour
                 break;
             }
         }
+        
 
         for (int i = 0; i < 30; i++) //6v6 so we need 11 more players
         {
@@ -156,7 +171,7 @@ public class NetworkPrePrep : MonoBehaviour
     {
         int FileCount = Directory.GetFiles(Application.dataPath + "/Resources/FalseData").Length;
         if (FileCount > 0) { FileCount = FileCount / 2; } //account for META files
-        Reader = new StreamReader(Application.dataPath + "/Resources/FalseData/MatchData" + FileCount + ".csv", true);
+        Reader = new StreamReader(Application.dataPath + "/Resources/FalseData/MatchData0.csv", true);
         FileData = Reader.ReadToEnd();
         Reader.Close();
 
