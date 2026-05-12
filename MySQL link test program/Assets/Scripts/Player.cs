@@ -4,6 +4,8 @@ using UnityEngine;
 public class Player
 {
     public string UserName;
+    public string Password;
+    public string Email;
     public int level;
     public int Kills;
     public int Deaths;
