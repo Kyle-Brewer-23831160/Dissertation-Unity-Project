@@ -1,12 +1,13 @@
 using System.Collections.Generic;
 using UnityEditor.PackageManager;
+using UnityEngine;
 
 public class NeuralNetwork
 {
     public List<Layer> layers = new List<Layer>();
 
     public float learningRate; //keep between 0 and 1, controls what percentage of error gradient gets used e.g 1 = 100 percent
-   
+
     // layerSizes is the network shape
     //{2, 2, 1} means:
     // 2 inputs, 2 neurons in hidden layer, 1 output neuron
@@ -14,13 +15,11 @@ public class NeuralNetwork
     {
         this.learningRate = learningRate;
 
-        // Start from index 1 because index 0 is the input size, not a real layer object
         for (int i = 1; i < layerSizes.Length; i++)
         {
-            // Create each layer using:
-            // current layer size = number of neurons in this layer
-            // previous layer size = number of inputs each neuron receives
-            layers.Add(new Layer(layerSizes[i], layerSizes[i - 1]));
+            // Identify if this iteration represents the final output layer
+            bool isOutputLayer = (i == layerSizes.Length - 1);
+            layers.Add(new Layer(layerSizes[i], layerSizes[i - 1], isOutputLayer));
         }
     }
 
@@ -51,12 +50,13 @@ public class NeuralNetwork
         {
             Neuron neuron = outputLayer.neurons[i];
 
-            // Error = target - actual output
-            float error = target - neuron.output; //this could be an issue;
+            // Rectified Error: Output - Target combined with -= weight updates fixes the sign error
+            float error = neuron.output - target;
 
-            //Sigmoid derivative = 1 - out * out
+            // Sigmoid derivative: out * (1 - out)
             neuron.errorGradient = error * (neuron.output * (1.0f - neuron.output));
         }
+
 
         // -----------------------------
         // 2. Hidden layer error gradients
@@ -69,16 +69,17 @@ public class NeuralNetwork
             for (int i = 0; i < currentLayer.neurons.Count; i++)
             {
                 Neuron neuron = currentLayer.neurons[i];
-
                 float sum = 0.0f;
 
-                // Add contribution from each neuron in the next layer
                 for (int j = 0; j < nextLayer.neurons.Count; j++)
                 {
                     sum += nextLayer.neurons[j].weights[i] * nextLayer.neurons[j].errorGradient;
                 }
 
-                neuron.errorGradient = sum * (neuron.output * (1.0f - neuron.output));
+                // ReLU derivative: 1 if output > 0, otherwise 0
+                float reluDerivative = (neuron.output > 0.0f) ? 1.0f : 0.01f;
+                neuron.errorGradient = sum * reluDerivative;
+    
             }
         }
 
@@ -108,6 +109,8 @@ public class NeuralNetwork
                 }
             }
 
+            float weightDecay = 0.001f;
+
             // Update each neuron in this layer
             for (int neuronIndex = 0; neuronIndex < currentLayer.neurons.Count; neuronIndex++)
             {
@@ -116,7 +119,9 @@ public class NeuralNetwork
                 // Update each weight
                 for (int weightIndex = 0; weightIndex < neuron.weights.Count; weightIndex++)
                 {
-                    neuron.weights[weightIndex] += learningRate * neuron.errorGradient * layerInputs[weightIndex];
+                    neuron.weights[weightIndex] *= (1.0f - weightDecay * learningRate);
+
+                    neuron.weights[weightIndex] -= learningRate * neuron.errorGradient * layerInputs[weightIndex];
                 }
 
                 // Update bias

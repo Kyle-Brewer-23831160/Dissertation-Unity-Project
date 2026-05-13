@@ -46,16 +46,16 @@ public class RandomiseAndJudge : MonoBehaviour
 
         foreach(Player user in PrePrep.Team1)
         {
-            playerdata.Add(user.PlayerElo);
-            playerdata.Add(user.level);
-            playerdata.Add(user.KDR);
+            playerdata.Add(Normalize(user.PlayerElo, 0, 5000));
+            playerdata.Add(Normalize(user.level, 0, 500));
+            playerdata.Add(Mathf.Clamp01(user.KDR / 5));
         }
 
         foreach (Player user in PrePrep.Team2)
         {
-            playerdata.Add(user.PlayerElo);
-            playerdata.Add(user.level);
-            playerdata.Add(user.KDR);
+            playerdata.Add(Normalize(user.PlayerElo, 0, 5000));
+            playerdata.Add(Normalize(user.level, 0, 500));
+            playerdata.Add(Mathf.Clamp01(user.KDR / 5));
         }
 
 
@@ -74,14 +74,11 @@ public class RandomiseAndJudge : MonoBehaviour
         Team2Player6.text = PrePrep.Team2[5].UserName;
 
         List<float> MatchFairness = PrePrep.nn.FeedForward(playerdata);
-        print("Network Result: " + MatchFairness[0]);
 
         float Team1power = PrePrep.CalculateTeamStrength(PrePrep.Team1);
         float Team2Power = PrePrep.CalculateTeamStrength(PrePrep.Team2);
 
         float realfariness = FindFirstObjectByType<FalseDataGen>().CalculateMatchFairness(Team1power, Team2Power);
-
-        print("actual Result: " + realfariness);
 
         writer = new StreamWriter(Application.dataPath + "/Resources/NetworkOutput/NetworkData0.csv", true);
 
@@ -92,5 +89,10 @@ public class RandomiseAndJudge : MonoBehaviour
         writer.WriteLine(row);
 
         writer.Close();
+    }
+
+    public float Normalize(float value, float min, float max) //normalise before passing to the network
+    {
+        return Mathf.Clamp01((value - min) / (max - min));
     }
 }

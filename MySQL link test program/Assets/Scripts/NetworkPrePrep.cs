@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
@@ -27,9 +28,13 @@ public class NetworkPrePrep : MonoBehaviour
 
     private void Start()
     {
-       ReadCSV();
+        nn = new NeuralNetwork(NetworkStruct, learningRate);
     }
 
+    public void ReadAndTrain()
+    {
+       ReadCSV();
+    }
     //get the player pool
     public IEnumerator GetPoolFromDatabase(string QueuedPlayerName, List<Player> Players)
     {
@@ -47,7 +52,6 @@ public class NetworkPrePrep : MonoBehaviour
         {
             foreach (Player p in Players) //search through all users
             {
-
                 bool ValidElo = p.PlayerElo >= PlayerList[0].PlayerElo - 400 &&
                                 p.PlayerElo <= PlayerList[0].PlayerElo + 400; //if current checking player isnt too low or too high compared to first player
 
@@ -84,7 +88,7 @@ public class NetworkPrePrep : MonoBehaviour
 
         while (Team1.Count < 6)
         {
-            int PlayerIndex = Random.Range(0, PlayerList.Count);
+            int PlayerIndex = UnityEngine.Random.Range(0, PlayerList.Count);
             if (!Team1.Contains(PlayerList[PlayerIndex]))
             {
                 Team1.Add(PlayerList[PlayerIndex]);
@@ -94,7 +98,7 @@ public class NetworkPrePrep : MonoBehaviour
 
         while (Team2.Count < 6)
         {
-            int PlayerIndex = Random.Range(0, PlayerList.Count);
+            int PlayerIndex = UnityEngine.Random.Range(0, PlayerList.Count);
             if (!Team2.Contains(PlayerList[PlayerIndex]) && !Team1.Contains(PlayerList[PlayerIndex])) //esure that players on team 1 cant also be on team 2
             {
                 Team2.Add(PlayerList[PlayerIndex]);
@@ -114,37 +118,45 @@ public class NetworkPrePrep : MonoBehaviour
 
     private void ReadCSV()
     {
-        int FileCount = Directory.GetFiles(Application.dataPath + "/Resources/FalseData").Length;
-        if (FileCount > 0) { FileCount = FileCount / 2; } //account for META files
-        Reader = new StreamReader(Application.dataPath + "/Resources/FalseData/MatchData0.csv", true);
-        FileData = Reader.ReadToEnd();
-        Reader.Close();
+        string folderPath = Application.dataPath + "/Resources/FalseData/";
+        if (!Directory.Exists(folderPath)) return;
 
-        string[] rows = FileData.Split("\n"[0]); //each row will have data from 2 teams as well as fairness result
+        string[] files = Directory.GetFiles(folderPath, "*.csv");
 
-        for (int i = 1; i < rows.Length - 1; i++) //for each row
+        foreach (string filePath in files)
         {
-            string[] rowParts = rows[i].Split(","[0]);  //each part will be a piece of data from each player on either of 2 teams
-
-            List<float> RowData = new List<float>(); //issue is here
-
-            for (int j = 0; j < rowParts.Length; j++)
+            using (StreamReader reader = new StreamReader(filePath, true))
             {
-                bool FormatGuard = float.TryParse(rowParts[j], out float result);
-                if (FormatGuard)
-                {
-                    RowData.Add(result);
-                }
-                else continue;
+                FileData = reader.ReadToEnd();
             }
 
+            string[] rows = FileData.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries); //each row will have data from 2 teams as well as fairness result
 
-            if (RowData.Count >= 37)
+
+            for (int i = 1; i < rows.Length - 1; i++) //for each row after header
             {
-                List<float> inputs = RowData.GetRange(0, 36);
-                float target = RowData[36];
+                string[] rowParts = rows[i].Split(","[0]);  //each part will be a piece of data from each player on either of 2 teams
 
-                Data.Add(new Brain.TrainingData(inputs, target));
+                List<float> RowData = new List<float>(); //issue is here
+
+                for (int j = 0; j < rowParts.Length; j++)
+                {
+                    if (float.TryParse(rowParts[j], out float result))
+                    {
+                        RowData.Add(result);
+                    }
+                }
+
+                if (RowData.Count == 37) //correct size
+                {
+                    List<float> inputs = RowData.GetRange(0, 36);
+                    float target = RowData[36];
+
+                    if (target > 0.0f)
+                    {
+                        Data.Add(new Brain.TrainingData(inputs, target));
+                    }
+                }
             }
         }
 
@@ -177,26 +189,36 @@ public class NetworkPrePrep : MonoBehaviour
         for (int epoch = 0; epoch < epochs; epoch++)
         {
             // --- SHUFFLE START ---
-            for (int i = 0; i < Data.Count; i++)
+            // --- SAFE, MEMORY-ISOLATED SHUFFLE ---
+            System.Random rng = new System.Random(); // Using System.Random is safer for background loops
+            int n = Data.Count;
+
+            while (n > 1)
             {
-                var temp = Data[i];
-                int randomIndex = Random.Range(i, Data.Count);
-                Data[i] = Data[randomIndex];
-                Data[randomIndex] = temp;
+                n--;
+                int k = rng.Next(n + 1); // Select a safe bound index
+
+                // Perform a strict value swap that preserves object integrity
+                Brain.TrainingData value = Data[k];
+                Data[k] = Data[n];
+                Data[n] = value;
             }
 
             double totalError = 0.0;
 
-            for (int i = 0; i < Data.Count; i++) 
+            for (int i = 0; i < Data.Count; i++)
             {
-                // Get the network's current output for that same sample
-                List<float> result = nn.FeedForward(Data[i].inputs); //the outputs after all inputs have been through the newtwork
-               
-                double error = Data[i].target - (double)result[0];
-                totalError += error * error;
+                if (Data[i].target != 0)
+                {
+                    // Get the network's current output for that same sample
+                    List<float> result = nn.FeedForward(Data[i].inputs); //the outputs after all inputs have been through the newtwork
 
-                // Train on one sample
-                nn.BackPropagate(Data[i].inputs, Data[i].target);
+                    double error = Data[i].target - (double)result[0];
+                    totalError += error * error;
+
+                    // Train on one sample
+                    nn.BackPropagate(Data[i].inputs, Data[i].target);
+                }
             }
 
             Debug.Log("Epoch " + epoch + " | Total Error = " + totalError.ToString("F6"));
