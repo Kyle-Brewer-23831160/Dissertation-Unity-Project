@@ -189,19 +189,12 @@ public class NetworkPrePrep : MonoBehaviour
         for (int epoch = 0; epoch < epochs; epoch++)
         {
             // --- SHUFFLE START ---
-            // --- SAFE, MEMORY-ISOLATED SHUFFLE ---
-            System.Random rng = new System.Random(); // Using System.Random is safer for background loops
-            int n = Data.Count;
-
-            while (n > 1)
+            for(int i = 0; i < Data.count; i++)
             {
-                n--;
-                int k = rng.Next(n + 1); // Select a safe bound index
-
-                // Perform a strict value swap that preserves object integrity
-                Brain.TrainingData value = Data[k];
-                Data[k] = Data[n];
-                Data[n] = value;
+               var temp = Data[i];
+               int rand = UnityEngine.Random.Range(i, Data.count);
+               Data[i] = Data[rand];
+               Data[rand] = temp;
             }
 
             double totalError = 0.0;
