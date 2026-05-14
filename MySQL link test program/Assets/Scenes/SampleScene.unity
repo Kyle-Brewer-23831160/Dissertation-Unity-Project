@@ -510,7 +510,7 @@ MonoBehaviour:
   Team1: []
   Team2: []
   epochs: 600
-  learningRate: 0.001
+  learningRate: 0.0005
   NetworkStruct: 24000000180000000c00000001000000
   Data: []
 --- !u!114 &93009620

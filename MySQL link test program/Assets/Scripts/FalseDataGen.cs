@@ -42,6 +42,7 @@ public class FalseDataGen : MonoBehaviour
                     {
                         Player player = new Player();
                         player.UserName = parts[f];
+
                         player.level = int.Parse(parts[f + 1]);
                         player.Kills = int.Parse(parts[f + 2]);
                         player.Deaths = int.Parse(parts[f + 3]);
@@ -97,6 +98,10 @@ public class FalseDataGen : MonoBehaviour
             float NormalizedLevel = Normalize(p.level, 0, 500);
             float NormalizedKD = Mathf.Clamp01(p.KDR / 5); //rare for any player to have higher than this, so this is the soft cap
 
+            NormalizedElo = Mathf.Round(NormalizedElo * 10000.0f) / 10000.0f;
+            NormalizedLevel = Mathf.Round(NormalizedLevel * 10000.0f) / 10000.0f;
+            NormalizedKD = Mathf.Round(NormalizedKD * 10000.0f) / 10000.0f;
+
             row += $"{NormalizedElo},{NormalizedLevel},{NormalizedKD},";
         }
 
@@ -106,6 +111,10 @@ public class FalseDataGen : MonoBehaviour
             float NormalizedElo = Normalize(p.PlayerElo, 0, 5000);
             float NormalizedLevel = Normalize(p.level, 0, 500);
             float NormalizedKD = Mathf.Clamp01(p.KDR / 5);
+
+            NormalizedElo = Mathf.Round(NormalizedElo * 10000.0f) / 10000.0f;
+            NormalizedLevel = Mathf.Round(NormalizedLevel * 10000.0f) / 10000.0f;
+            NormalizedKD = Mathf.Round(NormalizedKD * 10000.0f) / 10000.0f;
 
             row += $"{NormalizedElo},{NormalizedLevel},{NormalizedKD},";
         }
