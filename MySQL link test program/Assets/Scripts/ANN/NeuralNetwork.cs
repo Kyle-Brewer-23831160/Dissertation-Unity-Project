@@ -53,7 +53,6 @@ public class NeuralNetwork
             // Rectified Error: Output - Target combined with -= weight updates fixes the sign error
             float error = neuron.output - target;
 
-            // Sigmoid derivative: out * (1 - out)
             neuron.errorGradient = error * (neuron.output * (1.0f - neuron.output));
         }
 
@@ -77,7 +76,7 @@ public class NeuralNetwork
                 }
 
                 // ReLU derivative: 1 if output > 0, otherwise 0
-                float reluDerivative = (neuron.output > 0.0f) ? 1.0f : 0.01f;
+                float reluDerivative = (neuron.output > 0.000001f) ? 1.0f : 0.01f;
                 neuron.errorGradient = sum * reluDerivative;
     
             }
@@ -119,13 +118,14 @@ public class NeuralNetwork
                 // Update each weight
                 for (int weightIndex = 0; weightIndex < neuron.weights.Count; weightIndex++)
                 {
-                    neuron.weights[weightIndex] *= (1.0f - weightDecay * learningRate);
+                    // neuron.weights[weightIndex] *= (1.0f - weightDecay);
+                    neuron.weights[weightIndex] -= learningRate * (neuron.errorGradient * layerInputs[weightIndex] + weightDecay * neuron.weights[weightIndex]);
 
                     neuron.weights[weightIndex] -= learningRate * neuron.errorGradient * layerInputs[weightIndex];
                 }
 
                 // Update bias
-                neuron.bias += learningRate * neuron.errorGradient;
+                neuron.bias -= learningRate * neuron.errorGradient;
             }
         }
     }

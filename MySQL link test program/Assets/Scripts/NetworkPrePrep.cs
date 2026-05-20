@@ -189,10 +189,10 @@ public class NetworkPrePrep : MonoBehaviour
         for (int epoch = 0; epoch < epochs; epoch++)
         {
             // --- SHUFFLE START ---
-            for(int i = 0; i < Data.count; i++)
+            for(int i = 0; i < Data.Count; i++)
             {
                var temp = Data[i];
-               int rand = UnityEngine.Random.Range(i, Data.count);
+               int rand = UnityEngine.Random.Range(i, Data.Count);
                Data[i] = Data[rand];
                Data[rand] = temp;
             }
