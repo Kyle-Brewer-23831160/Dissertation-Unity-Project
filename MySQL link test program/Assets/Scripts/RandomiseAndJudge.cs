@@ -18,6 +18,9 @@ public class RandomiseAndJudge : MonoBehaviour
 
     public List<Player> FullPlayerList = new List<Player>();
 
+    [SerializeField] private TMP_InputField MatchCount;
+    [SerializeField] private TextMeshProUGUI PrevFairnessBox;
+
     private void Start()
     {
         if (File.Exists("Application.dataPath + \"/Resources/NetworkOutput/NetworkData.csv\""))
@@ -96,10 +99,15 @@ public class RandomiseAndJudge : MonoBehaviour
             }
         }
 
-        for (int i = 0; i < 500; i++)
+        int loops = int.Parse(MatchCount.text);
+
+        if (loops > 0)
         {
-          StartCoroutine(GenerateMatch());
-           index = 0;
+            for (int i = 0; i < loops; i++)
+            {
+                StartCoroutine(GenerateMatch());
+                index = 0;
+            }
         }
     }
 
@@ -143,6 +151,8 @@ public class RandomiseAndJudge : MonoBehaviour
         Team2Player6.text = PrePrep.Team2[5].UserName;
 
         List<float> MatchFairness = PrePrep.nn.FeedForward(playerdata);
+
+        PrevFairnessBox.text = " Previous match fairness: \n" + MatchFairness[0].ToString();
 
         float Team1power = PrePrep.CalculateTeamStrength(PrePrep.Team1);
         float Team2Power = PrePrep.CalculateTeamStrength(PrePrep.Team2);

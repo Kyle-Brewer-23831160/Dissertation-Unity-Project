@@ -151,13 +151,9 @@ public class FalseDataGen : MonoBehaviour
     {
         float StrengthGap = Mathf.Abs(Team1Power - Team2Power);
 
-        // Define Fairness (Target for Backprop)
-        // If the gap is small (e.g., < 200), Fairness = 1.0 (Close match)
-        // If the gap is huge (e.g., > 2000), Fairness = 0.0 (Stomp)
         float fairnessTarget = Mathf.Clamp01(1.0f - (StrengthGap / 2000f)); //make lower if all games are too perfect, make higher if games are constant stomps
 
         //round to get rid of near meaningless decimal places
-
         fairnessTarget = Mathf.Round(fairnessTarget * 10000.0f) / 10000.0f;
 
         return fairnessTarget;
@@ -306,7 +302,6 @@ public class FalseDataGen : MonoBehaviour
                             }
                         }
 
-                        //Only add if no similar match was found
                         if (!isDuplicate)
                         {
                             MatchList.Add(match);

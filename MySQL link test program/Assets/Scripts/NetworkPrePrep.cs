@@ -48,7 +48,7 @@ public class NetworkPrePrep : MonoBehaviour
     {
        ReadCSV();
     }
-    //get the player pool
+
     public IEnumerator GetPoolFromDatabase(string QueuedPlayerName, List<Player> Players)
     {
         PlayerList = new List<Player>();
@@ -150,7 +150,7 @@ public class NetworkPrePrep : MonoBehaviour
             {
                 string[] rowParts = rows[i].Split(","[0]);  //each part will be a piece of data from each player on either of 2 teams
 
-                List<float> RowData = new List<float>(); //issue is here
+                List<float> RowData = new List<float>();
 
                 for (int j = 0; j < rowParts.Length; j++)
                 {
