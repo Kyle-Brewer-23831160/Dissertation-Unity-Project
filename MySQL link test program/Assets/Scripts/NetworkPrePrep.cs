@@ -171,7 +171,7 @@ public class NetworkPrePrep : MonoBehaviour
             }
         }
 
-        TrainNetwork(); //train network once data has been read
+        StartCoroutine(TrainNetwork()); //train network once data has been read
     }
 
     //calculate player power and team power
@@ -193,7 +193,7 @@ public class NetworkPrePrep : MonoBehaviour
         return TeamPower;
     }
 
-    private void TrainNetwork()
+    private IEnumerator TrainNetwork()
     {
         if (nn == null) { nn = new NeuralNetwork(NetworkStruct, learningRate); }
 
@@ -226,6 +226,7 @@ public class NetworkPrePrep : MonoBehaviour
             }
 
             Debug.Log("Epoch " + epoch + " | Total Error = " + totalError.ToString("F6"));
+            yield return null;
         }
     }
 }

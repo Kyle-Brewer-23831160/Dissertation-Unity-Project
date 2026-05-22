@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Networking;
 
 public class RandomiseAndJudge : MonoBehaviour
 {
-    public string PlayerName;
     [SerializeField] private NetworkPrePrep PrePrep;
     [SerializeField]
     private TextMeshProUGUI Team1Player1, Team1Player2, Team1Player3, Team1Player4, Team1Player5, Team1Player6,
@@ -18,6 +18,8 @@ public class RandomiseAndJudge : MonoBehaviour
 
     int i = 0;
 
+    public List<Player> FullPlayerList = new List<Player>();
+
     private void Start()
     {
         writer = new StreamWriter(Application.dataPath + "/Resources/NetworkOutput/NetworkData0.csv", true);
@@ -28,18 +30,64 @@ public class RandomiseAndJudge : MonoBehaviour
         writer.WriteLine(header);
 
         writer.Close();
+
+        StartCoroutine(GetPlayers());
+    }
+
+    private IEnumerator GetPlayers() //locally save player data on start, reduces web requests needed later
+    {
+        //get all players from database
+        using (UnityWebRequest www = UnityWebRequest.Get("http://localhost/Unity%20Scripts/GetPlayerPool.php"))
+        {
+            yield return www.SendWebRequest();
+
+            if (www.result == UnityWebRequest.Result.ConnectionError || www.result == UnityWebRequest.Result.ProtocolError || www.result == UnityWebRequest.Result.DataProcessingError)
+            {
+                Debug.Log(www.error);
+            }
+            else
+            {
+                string result = www.downloadHandler.text;
+                string[] parts = result.Split("/");
+
+                for (int f = 0; f < parts.Length; f += 5)
+                {
+                    if (parts[f] != string.Empty)
+                    {
+                        Player player = new Player();
+                        player.UserName = parts[f];
+
+                        player.level = int.Parse(parts[f + 1]);
+                        player.Kills = int.Parse(parts[f + 2]);
+                        player.Deaths = int.Parse(parts[f + 3]);
+                        player.KDR = (float)player.Kills / Mathf.Max(1, player.Deaths);
+                        string Elo = parts[f + 4];
+                        int EloValue;
+                        int.TryParse(Elo, out EloValue);
+                        player.PlayerElo = EloValue;
+                        FullPlayerList.Add(player);
+                    }
+                }
+            }
+        }
+
+        FindFirstObjectByType<NetworkPrePrep>().PlayerList = FullPlayerList;
     }
 
     public void StartMatchGeneration()
     {
         for (int i = 0; i < 500; i++)
         {
-            GenerateMatch();
+          StartCoroutine(GenerateMatch());
         }
     }
 
-    private void GenerateMatch()
+    private IEnumerator GenerateMatch()
     {
+        int rand = Random.Range(0, FullPlayerList.Count);
+
+        yield return PrePrep.GetPoolFromDatabase(FullPlayerList[rand].UserName, FullPlayerList);
+
         PrePrep.GetAndRandomise(); //assign players from the pools to teams
 
         playerdata.Clear(); //clear Data list
@@ -78,6 +126,7 @@ public class RandomiseAndJudge : MonoBehaviour
         float Team1power = PrePrep.CalculateTeamStrength(PrePrep.Team1);
         float Team2Power = PrePrep.CalculateTeamStrength(PrePrep.Team2);
 
+
         float realfariness = FindFirstObjectByType<FalseDataGen>().CalculateMatchFairness(Team1power, Team2Power);
 
         writer = new StreamWriter(Application.dataPath + "/Resources/NetworkOutput/NetworkData0.csv", true);
@@ -89,6 +138,8 @@ public class RandomiseAndJudge : MonoBehaviour
         writer.WriteLine(row);
 
         writer.Close();
+
+        yield return null;
     }
 
     public float Normalize(float value, float min, float max) //normalise before passing to the network
