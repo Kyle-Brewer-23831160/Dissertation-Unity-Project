@@ -23,8 +23,8 @@ public class NeuralNetwork
         }
     }
 
-    // Pass inputs forward through all layers
-    public List<float> FeedForward(List<float> inputs) //a list in this case would be 37 inputs
+
+    public List<float> FeedForward(List<float> inputs)  // Pass inputs forward through all layers
     {
         List<float> currentOutputs = inputs;
 
@@ -50,9 +50,10 @@ public class NeuralNetwork
         {
             Neuron neuron = outputLayer.neurons[i];
 
-            // Rectified Error: Output - Target combined with -= weight updates fixes the sign error
+            // Error: Output - Target
             float error = neuron.output - target;
 
+            //sigmoid function derivative
             neuron.errorGradient = error * (neuron.output * (1.0f - neuron.output));
         }
 
@@ -75,7 +76,7 @@ public class NeuralNetwork
                     sum += nextLayer.neurons[j].weights[i] * nextLayer.neurons[j].errorGradient;
                 }
 
-                // ReLU derivative: 1 if output > 0, otherwise 0
+                //leaky ReLU derivative: 1 if output > 0, otherwise 0
                 float reluDerivative = (neuron.output > 0.000001f) ? 1.0f : 0.01f;
                 neuron.errorGradient = sum * reluDerivative;
     
@@ -118,9 +119,6 @@ public class NeuralNetwork
                 // Update each weight
                 for (int weightIndex = 0; weightIndex < neuron.weights.Count; weightIndex++)
                 {
-                    // neuron.weights[weightIndex] *= (1.0f - weightDecay);
-                    neuron.weights[weightIndex] -= learningRate * (neuron.errorGradient * layerInputs[weightIndex] + weightDecay * neuron.weights[weightIndex]);
-
                     neuron.weights[weightIndex] -= learningRate * neuron.errorGradient * layerInputs[weightIndex];
                 }
 

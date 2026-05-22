@@ -1,10 +1,21 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Data;
 using System.IO;
-using System.Runtime.CompilerServices;
 using UnityEngine;
+
+[Serializable]
+    public class TrainingData
+{
+    public List<float> inputs; //inputs for training player data
+    public float target; //target will be the match fairness
+
+    public TrainingData(List<float> inputs, float target) //the hope is when inputs 1,2,3,4 etc are input, a match outcome is output
+    {
+        this.inputs = inputs;
+        this.target = target;
+    }
+}
 
 public class NetworkPrePrep : MonoBehaviour
 {
@@ -22,7 +33,7 @@ public class NetworkPrePrep : MonoBehaviour
     //first element = input layer, last element = output layer, anything between =  hidden layers
     [SerializeField] private int[] NetworkStruct; //The number in those elements = number of neurons in that layer
 
-    public List<Brain.TrainingData> Data;
+    public List<TrainingData> Data;
 
     private string FileData;
 
@@ -154,7 +165,7 @@ public class NetworkPrePrep : MonoBehaviour
 
                     if (target > 0.0f)
                     {
-                        Data.Add(new Brain.TrainingData(inputs, target));
+                        Data.Add(new TrainingData(inputs, target));
                     }
                 }
             }

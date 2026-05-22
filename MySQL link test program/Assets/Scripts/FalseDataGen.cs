@@ -151,7 +151,7 @@ public class FalseDataGen : MonoBehaviour
         // Define Fairness (Target for Backprop)
         // If the gap is small (e.g., < 200), Fairness = 1.0 (Close match)
         // If the gap is huge (e.g., > 2000), Fairness = 0.0 (Stomp)
-        float fairnessTarget = Mathf.Clamp01(1.0f - (StrengthGap / 2800f)); //make lower if all games are too perfect, make higher if games are constant stomps
+        float fairnessTarget = Mathf.Clamp01(1.0f - (StrengthGap / 2000f)); //make lower if all games are too perfect, make higher if games are constant stomps
 
         //round to get rid of near meaningless decimal places
 
@@ -171,7 +171,7 @@ public class FalseDataGen : MonoBehaviour
 
         int rand = Random.Range(0, FullPlayerList.Count);
 
-        for (int i = 0; i < 3600; i++) //generate 3000 values
+        for (int i = 0; i < 3050; i++) //generate 3000 values
         {
             yield return PrePrep.GetPoolFromDatabase(FullPlayerList[rand].UserName, FullPlayerList);
             PrePrep.GetAndRandomise(); //randomise teams
@@ -179,50 +179,29 @@ public class FalseDataGen : MonoBehaviour
             T2Power = PrePrep.CalculateTeamStrength(PrePrep.Team2);
             float fairness = CalculateMatchFairness(T1Power, T2Power);
 
-
-            if (i < 1000)
-            {
-                if(fairness > 0 && fairness < 0.33)
-                {
+            if (i < 1000) {
+                if(fairness > 0 && fairness < 0.33) { 
                     SaveMatchToCSV(PrePrep.Team1, PrePrep.Team2, CalculateMatchFairness(T1Power, T2Power)); //save results
                 }
-                else
-                {
-                    i--;
-                }
+                else i--;
             }
-            else if(i >= 1000 && i < 2000)
-            {
-                if (fairness >= 0.33 && fairness < 0.66)
-                {
+            else if(i >= 1000 && i < 2000) {
+                if (fairness >= 0.33 && fairness < 0.66) {
                     SaveMatchToCSV(PrePrep.Team1, PrePrep.Team2, CalculateMatchFairness(T1Power, T2Power)); //save results
                 }
-                else
-                {
-                    i--;
-                }
+                else i--;
             }
-            else if (i >= 2000 && i < 3000)
-            {
-                if (fairness >= 0.66 && fairness <= 0.90)
-                {
+            else if (i >= 2000 && i < 3000) {
+                if (fairness >= 0.66 && fairness <= 0.90) {
                     SaveMatchToCSV(PrePrep.Team1, PrePrep.Team2, CalculateMatchFairness(T1Power, T2Power)); //save results
                 }
-                else
-                {
-                    i--;
-                }
+                else i--;
             }
-            else if (i >= 3000 && i < 3600)
-            {
-                if (fairness >= 0.90 && fairness <= 1.0)
-                {
+            else if (i >= 3000 && i < 3050) {
+                if (fairness >= 0.90 && fairness <= 1.0) {
                     SaveMatchToCSV(PrePrep.Team1, PrePrep.Team2, CalculateMatchFairness(T1Power, T2Power)); //save results
                 }
-                else
-                {
-                    i--;
-                }
+                else i--;
             }
 
             if (i == 2999)
@@ -245,42 +224,18 @@ public class FalseDataGen : MonoBehaviour
 
                     //Parse the current line data into temporary variables
                     MatchStruct match = new MatchStruct();
-                    match.P1elo = float.Parse(SinglePart[0]);
-                    match.P1level = float.Parse(SinglePart[1]);
-                    match.P1kd = float.Parse(SinglePart[2]);
-                    match.P2elo = float.Parse(SinglePart[3]);
-                    match.P2level = float.Parse(SinglePart[4]);
-                    match.P2kd = float.Parse(SinglePart[5]);
-                    match.P3elo = float.Parse(SinglePart[6]);
-                    match.P3level = float.Parse(SinglePart[7]);
-                    match.P3kd = float.Parse(SinglePart[8]);
-                    match.P4elo = float.Parse(SinglePart[9]);
-                    match.P4level = float.Parse(SinglePart[10]);
-                    match.P4kd = float.Parse(SinglePart[11]);
-                    match.P5elo = float.Parse(SinglePart[12]);
-                    match.P5level = float.Parse(SinglePart[13]);
-                    match.P5kd = float.Parse(SinglePart[14]);
-                    match.P6elo = float.Parse(SinglePart[15]);
-                    match.P6level = float.Parse(SinglePart[16]);
-                    match.P6kd = float.Parse(SinglePart[17]);
-                    match.P7elo = float.Parse(SinglePart[18]);
-                    match.P7level = float.Parse(SinglePart[19]);
-                    match.P7kd = float.Parse(SinglePart[20]);
-                    match.P8elo = float.Parse(SinglePart[21]);
-                    match.P8level = float.Parse(SinglePart[22]);
-                    match.P8kd = float.Parse(SinglePart[23]);
-                    match.P9elo = float.Parse(SinglePart[24]);
-                    match.P9level = float.Parse(SinglePart[25]);
-                    match.P9kd = float.Parse(SinglePart[26]);
-                    match.P10elo = float.Parse(SinglePart[27]);
-                    match.P10level = float.Parse(SinglePart[28]);
-                    match.P10kd = float.Parse(SinglePart[29]);
-                    match.P11elo = float.Parse(SinglePart[30]);
-                    match.P11level = float.Parse(SinglePart[31]);
-                    match.P11kd = float.Parse(SinglePart[32]);
-                    match.P12elo = float.Parse(SinglePart[33]);
-                    match.P12level = float.Parse(SinglePart[34]);
-                    match.P12kd = float.Parse(SinglePart[35]);
+                    match.P1elo = float.Parse(SinglePart[0]); match.P1level = float.Parse(SinglePart[1]); match.P1kd = float.Parse(SinglePart[2]);
+                    match.P2elo = float.Parse(SinglePart[3]); match.P2level = float.Parse(SinglePart[4]); match.P2kd = float.Parse(SinglePart[5]);
+                    match.P3elo = float.Parse(SinglePart[6]); match.P3level = float.Parse(SinglePart[7]); match.P3kd = float.Parse(SinglePart[8]);
+                    match.P4elo = float.Parse(SinglePart[9]); match.P4level = float.Parse(SinglePart[10]); match.P4kd = float.Parse(SinglePart[11]);
+                    match.P5elo = float.Parse(SinglePart[12]); match.P5level = float.Parse(SinglePart[13]); match.P5kd = float.Parse(SinglePart[14]);
+                    match.P6elo = float.Parse(SinglePart[15]); match.P6level = float.Parse(SinglePart[16]); match.P6kd = float.Parse(SinglePart[17]);
+                    match.P7elo = float.Parse(SinglePart[18]); match.P7level = float.Parse(SinglePart[19]); match.P7kd = float.Parse(SinglePart[20]);
+                    match.P8elo = float.Parse(SinglePart[21]); match.P8level = float.Parse(SinglePart[22]); match.P8kd = float.Parse(SinglePart[23]);
+                    match.P9elo = float.Parse(SinglePart[24]); match.P9level = float.Parse(SinglePart[25]); match.P9kd = float.Parse(SinglePart[26]);
+                    match.P10elo = float.Parse(SinglePart[27]); match.P10level = float.Parse(SinglePart[28]); match.P10kd = float.Parse(SinglePart[29]); 
+                    match.P11elo = float.Parse(SinglePart[30]); match.P11level = float.Parse(SinglePart[31]); match.P11kd = float.Parse(SinglePart[32]);
+                    match.P12elo = float.Parse(SinglePart[33]); match.P12level = float.Parse(SinglePart[34]); match.P12kd = float.Parse(SinglePart[35]);
                     match.fairness = float.Parse(SinglePart[36]);
 
                     // 2. Check against existing data
@@ -349,12 +304,7 @@ public class FalseDataGen : MonoBehaviour
                     //Only add if no similar match was found
                     if (!isDuplicate)
                     {
-                        print("didnt find dupe");
                         MatchList.Add(match);
-                    }
-                    else 
-                    {
-                        print("found dupe ");
                     }
                 }
 
