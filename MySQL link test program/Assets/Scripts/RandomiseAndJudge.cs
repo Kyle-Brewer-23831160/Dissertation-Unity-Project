@@ -14,22 +14,27 @@ public class RandomiseAndJudge : MonoBehaviour
 
     List<float> playerdata = new List<float>();
 
-    StreamWriter writer;
-
-    int i = 0;
+    int index = 0;
 
     public List<Player> FullPlayerList = new List<Player>();
 
     private void Start()
     {
-        writer = new StreamWriter(Application.dataPath + "/Resources/NetworkOutput/NetworkData0.csv", true);
+        if (File.Exists("Application.dataPath + \"/Resources/NetworkOutput/NetworkData.csv\""))
+        {
+            File.Delete(Application.dataPath + "/Resources/NetworkOutput/NetworkData.csv");
+        }
 
-        string[] NetworkHeader = { "Attempt" , "NetworkOutput", "Real Output" };
-        string header = string.Join(",", NetworkHeader);
+        using (StreamWriter sw = new StreamWriter(Application.dataPath + "/Resources/NetworkOutput/NetworkData.csv", true))
+        {
 
-        writer.WriteLine(header);
+            string[] NetworkHeader = { "Attempt", "NetworkOutput", "Real Output", "Accuracy" };
+            string header = string.Join(",", NetworkHeader);
 
-        writer.Close();
+            sw.WriteLine(header);
+
+            sw.Close();
+        }
 
         StartCoroutine(GetPlayers());
     }
@@ -76,9 +81,25 @@ public class RandomiseAndJudge : MonoBehaviour
 
     public void StartMatchGeneration()
     {
+        if (File.Exists(Application.dataPath + "/Resources/NetworkOutput/NetworkData.csv"))
+        {
+            File.Delete(Application.dataPath + "/Resources/NetworkOutput/NetworkData.csv");
+
+            using (StreamWriter sw = new StreamWriter(Application.dataPath + "/Resources/NetworkOutput/NetworkData.csv", true))
+            {
+                string[] NetworkHeader = { "Attempt", "NetworkOutput", "Real Output", "Accuracy" };
+                string header = string.Join(",", NetworkHeader);
+
+                sw.WriteLine(header);
+
+                sw.Close();
+            }
+        }
+
         for (int i = 0; i < 500; i++)
         {
           StartCoroutine(GenerateMatch());
+           index = 0;
         }
     }
 
@@ -126,18 +147,24 @@ public class RandomiseAndJudge : MonoBehaviour
         float Team1power = PrePrep.CalculateTeamStrength(PrePrep.Team1);
         float Team2Power = PrePrep.CalculateTeamStrength(PrePrep.Team2);
 
-
         float realfariness = FindFirstObjectByType<FalseDataGen>().CalculateMatchFairness(Team1power, Team2Power);
 
-        writer = new StreamWriter(Application.dataPath + "/Resources/NetworkOutput/NetworkData0.csv", true);
+        float Accuracy = (1f - (Mathf.Abs(realfariness - MatchFairness[0]) / Mathf.Abs(realfariness))) * 100;
 
-        string row = $"{i},{MatchFairness[0]},{realfariness}";
+        Accuracy = Mathf.Round(Accuracy * 100.0f) / 100.0f;
+        
+        if(Accuracy < 0) Accuracy = 0;
 
-        i += 1;
+        using (StreamWriter sw = new StreamWriter(Application.dataPath + "/Resources/NetworkOutput/NetworkData.csv", true))
+        {
+            string row = $"{index},{MatchFairness[0]},{realfariness},{Accuracy}";
 
-        writer.WriteLine(row);
+            sw.WriteLine(row);
 
-        writer.Close();
+            sw.Close();
+        }
+
+        index += 1;
 
         yield return null;
     }

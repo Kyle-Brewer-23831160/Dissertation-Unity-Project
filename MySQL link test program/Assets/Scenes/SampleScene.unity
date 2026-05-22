@@ -509,8 +509,8 @@ MonoBehaviour:
   PlayerList: []
   Team1: []
   Team2: []
-  epochs: 600
-  learningRate: 0.001
+  epochs: 200
+  learningRate: 0.01
   NetworkStruct: 24000000180000000c00000001000000
   Data: []
 --- !u!114 &93009620
@@ -639,7 +639,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: be312e48667557943bab2710e3bbea0d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  PlayerName: GooGooDolls
   PrePrep: {fileID: 93009619}
   Team1Player1: {fileID: 1654583130}
   Team1Player2: {fileID: 2057312641}
@@ -653,6 +652,7 @@ MonoBehaviour:
   Team2Player4: {fileID: 1721430121}
   Team2Player5: {fileID: 965087003}
   Team2Player6: {fileID: 283447941}
+  FullPlayerList: []
 --- !u!1 &119663489
 GameObject:
   m_ObjectHideFlags: 0

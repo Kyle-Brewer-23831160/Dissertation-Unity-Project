@@ -25,7 +25,6 @@ public class MatchStruct
 public class FalseDataGen : MonoBehaviour
 {
     public NetworkPrePrep PrePrep;
-    private StreamWriter Writer;
     private float T1Power;
     private float T2Power;
     private int FileCount;
@@ -79,69 +78,73 @@ public class FalseDataGen : MonoBehaviour
 
     private void CreateCSV()
     {
-        FileCount = Directory.GetFiles(Application.dataPath + "/Resources/FalseData").Length;
-        if (FileCount > 0) { FileCount = FileCount / 2; } //account for META files
-        Writer = new StreamWriter(Application.dataPath + "/Resources/FalseData/MatchData" + (FileCount) + ".csv", true);
-
-        string headers = "";
-
-        // Create headers for Team A (Players 1-6) and Team B (Players 1-6)
-        string[] teams = { "TeamA", "TeamB" };
-        foreach (string team in teams)
+        if(File.Exists(Application.dataPath + "/Resources/FalseData/MatchData.csv"))
         {
-            for (int i = 1; i <= 6; i++)
-            {
-                headers += $"{team}_P{i}_Elo,{team}_P{i}_Level,{team}_P{i}_K/D,";
-            }
+            File.Delete(Application.dataPath + "/Resources/FalseData/MatchData.csv"); //delete old data
         }
+        using (StreamWriter sw = new StreamWriter(Application.dataPath + "/Resources/FalseData/MatchData.csv", true))
+        {
+            string headers = "";
 
-        headers += "FairnessScore";
+            // Create headers for Team A (Players 1-6) and Team B (Players 1-6)
+            string[] teams = { "TeamA", "TeamB" };
+            foreach (string team in teams)
+            {
+                for (int i = 1; i <= 6; i++)
+                {
+                    headers += $"{team}_P{i}_Elo,{team}_P{i}_Level,{team}_P{i}_K/D,";
+                }
+            }
 
-        Writer.WriteLine(headers);
+            headers += "FairnessScore";
 
-        Writer.Close();
+            sw.WriteLine(headers);
+
+            sw.Close();
+        }
     }
 
     public void SaveMatchToCSV(List<Player> teamA, List<Player> teamB, float fairness)
     {
-        Writer = new StreamWriter(Application.dataPath + "/Resources/FalseData/MatchData" + FileCount + ".csv", true);
-
-        string row = "";
-
-        // Add Team 1 stats
-        foreach (Player p in teamA)
+        using (StreamWriter sw = new StreamWriter(Application.dataPath + "/Resources/FalseData/MatchData.csv", true))
         {
-            float NormalizedElo = Normalize(p.PlayerElo, 0, 5000); //normalise data to improve network digestability
-            float NormalizedLevel = Normalize(p.level, 0, 500);
-            float NormalizedKD = Mathf.Clamp01(p.KDR / 5); //rare for any player to have higher than this, so this is the soft cap
+            string row = "";
 
-            NormalizedElo = Mathf.Round(NormalizedElo * 10000.0f) / 10000.0f;
-            NormalizedLevel = Mathf.Round(NormalizedLevel * 10000.0f) / 10000.0f;
-            NormalizedKD = Mathf.Round(NormalizedKD * 10000.0f) / 10000.0f;
+            // Add Team 1 stats
+            foreach (Player p in teamA)
+            {
+                float NormalizedElo = Normalize(p.PlayerElo, 0, 5000); //normalise data to improve network digestability
+                float NormalizedLevel = Normalize(p.level, 0, 500);
+                float NormalizedKD = Mathf.Clamp01(p.KDR / 5); //rare for any player to have higher than this, so this is the soft cap
 
-            row += $"{NormalizedElo},{NormalizedLevel},{NormalizedKD},";
+                NormalizedElo = Mathf.Round(NormalizedElo * 10000.0f) / 10000.0f;
+                NormalizedLevel = Mathf.Round(NormalizedLevel * 10000.0f) / 10000.0f;
+                NormalizedKD = Mathf.Round(NormalizedKD * 10000.0f) / 10000.0f;
+
+                row += $"{NormalizedElo},{NormalizedLevel},{NormalizedKD},";
+            }
+
+            // Add Team 2 stats
+            foreach (Player p in teamB)
+            {
+                float NormalizedElo = Normalize(p.PlayerElo, 0, 5000);
+                float NormalizedLevel = Normalize(p.level, 0, 500);
+                float NormalizedKD = Mathf.Clamp01(p.KDR / 5);
+
+                NormalizedElo = Mathf.Round(NormalizedElo * 10000.0f) / 10000.0f;
+                NormalizedLevel = Mathf.Round(NormalizedLevel * 10000.0f) / 10000.0f;
+                NormalizedKD = Mathf.Round(NormalizedKD * 10000.0f) / 10000.0f;
+
+                row += $"{NormalizedElo},{NormalizedLevel},{NormalizedKD},";
+            }
+
+            //fairness is the result which the network will use to learn
+            row += fairness.ToString();
+
+            sw.WriteLine(row);
+
+            sw.Close();
         }
-
-        // Add Team 2 stats
-        foreach (Player p in teamB)
-        {
-            float NormalizedElo = Normalize(p.PlayerElo, 0, 5000);
-            float NormalizedLevel = Normalize(p.level, 0, 500);
-            float NormalizedKD = Mathf.Clamp01(p.KDR / 5);
-
-            NormalizedElo = Mathf.Round(NormalizedElo * 10000.0f) / 10000.0f;
-            NormalizedLevel = Mathf.Round(NormalizedLevel * 10000.0f) / 10000.0f;
-            NormalizedKD = Mathf.Round(NormalizedKD * 10000.0f) / 10000.0f;
-
-            row += $"{NormalizedElo},{NormalizedLevel},{NormalizedKD},";
-        }
-
-        //fairness is the result which the network will use to learn
-        row += fairness.ToString();
-
-        Writer.WriteLine(row);
-
-        Writer.Close();
     }
 
     public float CalculateMatchFairness(float Team1Power, float Team2Power) //THIS WILL BE USED AS THE DATA USED TO TRAIN THE NETWORK
@@ -210,107 +213,110 @@ public class FalseDataGen : MonoBehaviour
                 //// REMOVE NEAR DUPLICATE VALUES ////
                 //////////////////////////////////////
 
-                StreamReader read = new StreamReader(Application.dataPath + "/Resources/FalseData/MatchData" + FileCount + ".csv");//reads most recent entry
-                string file = read.ReadToEnd();
-                read.Close();
-
-                string[] Lines = file.Split("\n"[0]);
-
-                for (int k = 1; k < Lines.Length; k++)
+                using (StreamReader sr = new StreamReader(Application.dataPath + "/Resources/FalseData/MatchData.csv"))
                 {
-                    string[] SinglePart = Lines[k].Split(","[0]);
+                    string file = sr.ReadToEnd();
+                    sr.Close();
+                
 
-                    if (SinglePart.Length != 37) continue; //filter entires where colums are missing
+                     string[] Lines = file.Split("\n"[0]);
 
-                    //Parse the current line data into temporary variables
-                    MatchStruct match = new MatchStruct();
-                    match.P1elo = float.Parse(SinglePart[0]); match.P1level = float.Parse(SinglePart[1]); match.P1kd = float.Parse(SinglePart[2]);
-                    match.P2elo = float.Parse(SinglePart[3]); match.P2level = float.Parse(SinglePart[4]); match.P2kd = float.Parse(SinglePart[5]);
-                    match.P3elo = float.Parse(SinglePart[6]); match.P3level = float.Parse(SinglePart[7]); match.P3kd = float.Parse(SinglePart[8]);
-                    match.P4elo = float.Parse(SinglePart[9]); match.P4level = float.Parse(SinglePart[10]); match.P4kd = float.Parse(SinglePart[11]);
-                    match.P5elo = float.Parse(SinglePart[12]); match.P5level = float.Parse(SinglePart[13]); match.P5kd = float.Parse(SinglePart[14]);
-                    match.P6elo = float.Parse(SinglePart[15]); match.P6level = float.Parse(SinglePart[16]); match.P6kd = float.Parse(SinglePart[17]);
-                    match.P7elo = float.Parse(SinglePart[18]); match.P7level = float.Parse(SinglePart[19]); match.P7kd = float.Parse(SinglePart[20]);
-                    match.P8elo = float.Parse(SinglePart[21]); match.P8level = float.Parse(SinglePart[22]); match.P8kd = float.Parse(SinglePart[23]);
-                    match.P9elo = float.Parse(SinglePart[24]); match.P9level = float.Parse(SinglePart[25]); match.P9kd = float.Parse(SinglePart[26]);
-                    match.P10elo = float.Parse(SinglePart[27]); match.P10level = float.Parse(SinglePart[28]); match.P10kd = float.Parse(SinglePart[29]); 
-                    match.P11elo = float.Parse(SinglePart[30]); match.P11level = float.Parse(SinglePart[31]); match.P11kd = float.Parse(SinglePart[32]);
-                    match.P12elo = float.Parse(SinglePart[33]); match.P12level = float.Parse(SinglePart[34]); match.P12kd = float.Parse(SinglePart[35]);
-                    match.fairness = float.Parse(SinglePart[36]);
-
-                    // 2. Check against existing data
-                    bool isDuplicate = false;
-                    float threshold = 0.22f; // Adjust this value to define "too similar"
-
-                    for (int j = 0; j < MatchList.Count; j++)
+                    for (int k = 1; k < Lines.Length; k++)
                     {
-                        // Compare every column
-                        if (Mathf.Abs(MatchList[j].P1elo - match.P1elo) < threshold &&
-                            Mathf.Abs(MatchList[j].P1level - match.P1level) < threshold &&
-                            Mathf.Abs(MatchList[j].P1kd - match.P1kd) < threshold &&
+                        string[] SinglePart = Lines[k].Split(","[0]);
 
-                            Mathf.Abs(MatchList[j].P2elo - match.P2elo) < threshold &&
-                            Mathf.Abs(MatchList[j].P2level - match.P2level) < threshold &&
-                            Mathf.Abs(MatchList[j].P2kd - match.P2kd) < threshold &&
+                        if (SinglePart.Length != 37) continue; //filter entires where colums are missing
 
-                            Mathf.Abs(MatchList[j].P3elo - match.P3elo) < threshold &&
-                            Mathf.Abs(MatchList[j].P3level - match.P3level) < threshold &&
-                            Mathf.Abs(MatchList[j].P3kd - match.P3kd) < threshold &&
+                        //Parse the current line data into temporary variables
+                        MatchStruct match = new MatchStruct();
+                        match.P1elo = float.Parse(SinglePart[0]); match.P1level = float.Parse(SinglePart[1]); match.P1kd = float.Parse(SinglePart[2]);
+                        match.P2elo = float.Parse(SinglePart[3]); match.P2level = float.Parse(SinglePart[4]); match.P2kd = float.Parse(SinglePart[5]);
+                        match.P3elo = float.Parse(SinglePart[6]); match.P3level = float.Parse(SinglePart[7]); match.P3kd = float.Parse(SinglePart[8]);
+                        match.P4elo = float.Parse(SinglePart[9]); match.P4level = float.Parse(SinglePart[10]); match.P4kd = float.Parse(SinglePart[11]);
+                        match.P5elo = float.Parse(SinglePart[12]); match.P5level = float.Parse(SinglePart[13]); match.P5kd = float.Parse(SinglePart[14]);
+                        match.P6elo = float.Parse(SinglePart[15]); match.P6level = float.Parse(SinglePart[16]); match.P6kd = float.Parse(SinglePart[17]);
+                        match.P7elo = float.Parse(SinglePart[18]); match.P7level = float.Parse(SinglePart[19]); match.P7kd = float.Parse(SinglePart[20]);
+                        match.P8elo = float.Parse(SinglePart[21]); match.P8level = float.Parse(SinglePart[22]); match.P8kd = float.Parse(SinglePart[23]);
+                        match.P9elo = float.Parse(SinglePart[24]); match.P9level = float.Parse(SinglePart[25]); match.P9kd = float.Parse(SinglePart[26]);
+                        match.P10elo = float.Parse(SinglePart[27]); match.P10level = float.Parse(SinglePart[28]); match.P10kd = float.Parse(SinglePart[29]);
+                        match.P11elo = float.Parse(SinglePart[30]); match.P11level = float.Parse(SinglePart[31]); match.P11kd = float.Parse(SinglePart[32]);
+                        match.P12elo = float.Parse(SinglePart[33]); match.P12level = float.Parse(SinglePart[34]); match.P12kd = float.Parse(SinglePart[35]);
+                        match.fairness = float.Parse(SinglePart[36]);
 
-                            Mathf.Abs(MatchList[j].P4elo - match.P4elo) < threshold &&
-                            Mathf.Abs(MatchList[j].P4level - match.P4level) < threshold &&
-                            Mathf.Abs(MatchList[j].P4kd - match.P4kd) < threshold &&
+                        // 2. Check against existing data
+                        bool isDuplicate = false;
+                        float threshold = 0.22f; // Adjust this value to define "too similar"
 
-                            Mathf.Abs(MatchList[j].P5elo - match.P5elo) < threshold &&
-                            Mathf.Abs(MatchList[j].P5level - match.P5level) < threshold &&
-                            Mathf.Abs(MatchList[j].P5kd - match.P5kd) < threshold &&
-
-                            Mathf.Abs(MatchList[j].P6elo - match.P6elo) < threshold &&
-                            Mathf.Abs(MatchList[j].P6level - match.P6level) < threshold &&
-                            Mathf.Abs(MatchList[j].P6kd - match.P6kd) < threshold &&
-
-                            Mathf.Abs(MatchList[j].P7elo - match.P7elo) < threshold &&
-                            Mathf.Abs(MatchList[j].P7level - match.P7level) < threshold &&
-                            Mathf.Abs(MatchList[j].P7kd - match.P7kd) < threshold &&
-
-                            Mathf.Abs(MatchList[j].P8elo - match.P8elo) < threshold &&
-                            Mathf.Abs(MatchList[j].P8level - match.P8level) < threshold &&
-                            Mathf.Abs(MatchList[j].P8kd - match.P8kd) < threshold &&
-
-                            Mathf.Abs(MatchList[j].P9elo - match.P9elo) < threshold &&
-                            Mathf.Abs(MatchList[j].P9level - match.P9level) < threshold &&
-                            Mathf.Abs(MatchList[j].P9kd - match.P9kd) < threshold &&
-
-                            Mathf.Abs(MatchList[j].P10elo - match.P10elo) < threshold &&
-                            Mathf.Abs(MatchList[j].P10level - match.P10level) < threshold &&
-                            Mathf.Abs(MatchList[j].P10kd - match.P10kd) < threshold &&
-
-                            Mathf.Abs(MatchList[j].P11elo - match.P11elo) < threshold &&
-                            Mathf.Abs(MatchList[j].P11level - match.P11level) < threshold &&
-                            Mathf.Abs(MatchList[j].P11kd - match.P11kd) < threshold &&
-
-                            Mathf.Abs(MatchList[j].P12elo - match.P12elo) < threshold &&
-                            Mathf.Abs(MatchList[j].P12level - match.P12level) < threshold &&
-                            Mathf.Abs(MatchList[j].P12kd - match.P12kd) < threshold &&
-
-                            Mathf.Abs(MatchList[j].fairness - match.fairness) < threshold)
-
+                        for (int j = 0; j < MatchList.Count; j++)
                         {
-                            isDuplicate = true;
-                            break;
-                        }
-                    }
+                            // Compare every column
+                            if (Mathf.Abs(MatchList[j].P1elo - match.P1elo) < threshold &&
+                                Mathf.Abs(MatchList[j].P1level - match.P1level) < threshold &&
+                                Mathf.Abs(MatchList[j].P1kd - match.P1kd) < threshold &&
 
-                    //Only add if no similar match was found
-                    if (!isDuplicate)
-                    {
-                        MatchList.Add(match);
+                                Mathf.Abs(MatchList[j].P2elo - match.P2elo) < threshold &&
+                                Mathf.Abs(MatchList[j].P2level - match.P2level) < threshold &&
+                                Mathf.Abs(MatchList[j].P2kd - match.P2kd) < threshold &&
+
+                                Mathf.Abs(MatchList[j].P3elo - match.P3elo) < threshold &&
+                                Mathf.Abs(MatchList[j].P3level - match.P3level) < threshold &&
+                                Mathf.Abs(MatchList[j].P3kd - match.P3kd) < threshold &&
+
+                                Mathf.Abs(MatchList[j].P4elo - match.P4elo) < threshold &&
+                                Mathf.Abs(MatchList[j].P4level - match.P4level) < threshold &&
+                                Mathf.Abs(MatchList[j].P4kd - match.P4kd) < threshold &&
+
+                                Mathf.Abs(MatchList[j].P5elo - match.P5elo) < threshold &&
+                                Mathf.Abs(MatchList[j].P5level - match.P5level) < threshold &&
+                                Mathf.Abs(MatchList[j].P5kd - match.P5kd) < threshold &&
+
+                                Mathf.Abs(MatchList[j].P6elo - match.P6elo) < threshold &&
+                                Mathf.Abs(MatchList[j].P6level - match.P6level) < threshold &&
+                                Mathf.Abs(MatchList[j].P6kd - match.P6kd) < threshold &&
+
+                                Mathf.Abs(MatchList[j].P7elo - match.P7elo) < threshold &&
+                                Mathf.Abs(MatchList[j].P7level - match.P7level) < threshold &&
+                                Mathf.Abs(MatchList[j].P7kd - match.P7kd) < threshold &&
+
+                                Mathf.Abs(MatchList[j].P8elo - match.P8elo) < threshold &&
+                                Mathf.Abs(MatchList[j].P8level - match.P8level) < threshold &&
+                                Mathf.Abs(MatchList[j].P8kd - match.P8kd) < threshold &&
+
+                                Mathf.Abs(MatchList[j].P9elo - match.P9elo) < threshold &&
+                                Mathf.Abs(MatchList[j].P9level - match.P9level) < threshold &&
+                                Mathf.Abs(MatchList[j].P9kd - match.P9kd) < threshold &&
+
+                                Mathf.Abs(MatchList[j].P10elo - match.P10elo) < threshold &&
+                                Mathf.Abs(MatchList[j].P10level - match.P10level) < threshold &&
+                                Mathf.Abs(MatchList[j].P10kd - match.P10kd) < threshold &&
+
+                                Mathf.Abs(MatchList[j].P11elo - match.P11elo) < threshold &&
+                                Mathf.Abs(MatchList[j].P11level - match.P11level) < threshold &&
+                                Mathf.Abs(MatchList[j].P11kd - match.P11kd) < threshold &&
+
+                                Mathf.Abs(MatchList[j].P12elo - match.P12elo) < threshold &&
+                                Mathf.Abs(MatchList[j].P12level - match.P12level) < threshold &&
+                                Mathf.Abs(MatchList[j].P12kd - match.P12kd) < threshold &&
+
+                                Mathf.Abs(MatchList[j].fairness - match.fairness) < threshold)
+
+                            {
+                                isDuplicate = true;
+                                break;
+                            }
+                        }
+
+                        //Only add if no similar match was found
+                        if (!isDuplicate)
+                        {
+                            MatchList.Add(match);
+                        }
                     }
                 }
 
-                File.Delete(Application.dataPath + "/Resources/FalseData/MatchData" + FileCount + ".csv"); //delete old CSV (could have duplicates)
+                File.Delete(Application.dataPath + "/Resources/FalseData/MatchData.csv"); //delete old CSV (could have duplicates)
 
-                using (StreamWriter sw = new StreamWriter(Application.dataPath + "/Resources/FalseData/MatchData" + FileCount + ".csv"))
+                using (StreamWriter sw = new StreamWriter(Application.dataPath + "/Resources/FalseData/MatchData.csv"))
                 {
                     string headers = "";
 

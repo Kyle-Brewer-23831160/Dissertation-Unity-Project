@@ -2,7 +2,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using UnityEditor;
 using UnityEngine;
+using static UnityEngine.Rendering.DebugUI.Table;
 
 [Serializable]
     public class TrainingData
@@ -195,6 +197,19 @@ public class NetworkPrePrep : MonoBehaviour
 
     private IEnumerator TrainNetwork()
     {
+        if (File.Exists(Application.dataPath + "/Resources/NetworkOutput/ErrorOverEpoch.csv"))
+        {
+            File.Delete(Application.dataPath + "/Resources/NetworkOutput/ErrorOverEpoch.csv"); //delete old data
+        }
+
+        using (StreamWriter sw = new StreamWriter(Application.dataPath + "/Resources/NetworkOutput/ErrorOverEpoch.csv", true))
+        {
+            string headers = "Epoch number, Total Error";
+
+            sw.WriteLine(headers);
+            sw.Close();
+        }
+
         if (nn == null) { nn = new NeuralNetwork(NetworkStruct, learningRate); }
 
         for (int epoch = 0; epoch < epochs; epoch++)
@@ -209,24 +224,43 @@ public class NetworkPrePrep : MonoBehaviour
             }
 
             double totalError = 0.0;
+            float totalAccuracy = 0.0f;
+            int samplesAnalysed = 0;
 
             for (int i = 0; i < Data.Count; i++)
             {
                 if (Data[i].target != 0)
                 {
+                    samplesAnalysed++;
+
                     // Get the network's current output for that same sample
                     List<float> result = nn.FeedForward(Data[i].inputs); //the outputs after all inputs have been through the newtwork
 
                     double error = Data[i].target - (double)result[0];
                     totalError += error * error;
 
+                    float SampleAbsError = Mathf.Abs((float)error);
+                    float SampleAccuracy  =  100.0f - ((SampleAbsError / Data[i].target) * 100.0f);
+
+                    totalAccuracy += SampleAccuracy;
+
                     // Train on one sample
                     nn.BackPropagate(Data[i].inputs, Data[i].target);
                 }
             }
 
-            Debug.Log("Epoch " + epoch + " | Total Error = " + totalError.ToString("F6"));
-            yield return null;
+            float OverallPercentage = 0.0f;
+            OverallPercentage = totalAccuracy / samplesAnalysed;
+
+            Debug.Log("Epoch " + epoch + " | Total Error = " + totalError.ToString("F6") + "| Accuracy: " + OverallPercentage.ToString("F2") + "%");
+
+            using (StreamWriter sw = new StreamWriter(Application.dataPath + "/Resources/NetworkOutput/ErrorOverEpoch.csv", true))
+            {
+                string row = $"{epoch},{totalError}";
+                sw.WriteLine(row);
+                sw.Close();
+                yield return null;
+            }
         }
     }
 }
