@@ -159,11 +159,23 @@ public class RandomiseAndJudge : MonoBehaviour
 
         float realfariness = FindFirstObjectByType<FalseDataGen>().CalculateMatchFairness(Team1power, Team2Power);
 
-        float Accuracy = (1f - (Mathf.Abs(realfariness - MatchFairness[0]) / Mathf.Abs(realfariness))) * 100;
+        float Accuracy = 0.0f;
+
+        if (Mathf.Approximately(realfariness, 0f))
+        {
+           Accuracy = Mathf.Approximately(MatchFairness[0], 0f) ? 100f : 0f;
+        }
+        else
+        {
+            float absoluteError = Mathf.Abs(realfariness - MatchFairness[0]);
+            float errorRatio = absoluteError / Mathf.Abs(realfariness);
+
+            Accuracy = (1f - errorRatio) * 100f;
+        }
+
+        Accuracy = Mathf.Clamp(Accuracy, 0f, 100f);
 
         Accuracy = Mathf.Round(Accuracy * 100.0f) / 100.0f;
-        
-        if(Accuracy < 0) Accuracy = 0;
 
         using (StreamWriter sw = new StreamWriter(Application.dataPath + "/Resources/NetworkOutput/NetworkData.csv", true))
         {
